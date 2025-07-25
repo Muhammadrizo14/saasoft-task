@@ -32,7 +32,7 @@
     <TableCell v-if="account.type === AccountType.LOCAL" class="p-2 relative">
       <div class="relative">
         <Input
-          v-model="account.password"
+          v-model="passwordValue"
           :type="showPassword ? 'text' : 'password'"
           @blur="handlePasswordBlur"
           :class="{ 'border-red-500': account.errors.password }"
@@ -59,7 +59,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useAccountsStore } from '@/stores/accounts'
 import type { Account } from '@/types'
 import { AccountType } from '@/types'
@@ -78,6 +78,13 @@ const store = useAccountsStore()
 const labelsInput = ref(account.labels.map(label => label.text).join('; '))
 const showPassword = ref(false)
 
+const passwordValue = computed({
+  get: () => account.password === null ? '' : account.password,
+  set: (value) => {
+    account.password = value
+  }
+})
+
 // Обработка изменения меток (onBlur)
 const handleLabelsBlur = () => {
   if (labelsInput.value !== account.labels.map(label => label.text).join('; ')) {
@@ -93,11 +100,12 @@ const handleLabelsBlur = () => {
 }
 
 // Обработка изменения типа (onBlur)
-const handleTypeChange = (value: AccountType) => {
-  if (value !== account.type) {
+const handleTypeChange = (value: any) => {
+  if (value && (value === AccountType.LDAP || value === AccountType.LOCAL) && value !== account.type) {
+    const accountType = value as AccountType;
     store.updateAccount(account.id, {
-      type: value,
-      password: value === AccountType.LDAP ? null : account.password
+      type: accountType,
+      password: accountType === AccountType.LDAP ? null : account.password
     })
     store.validateAccount(account.id)
   }
